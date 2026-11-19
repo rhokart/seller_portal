@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" xmlns:th="http://www.w3.org/1999/xhtml"
+      layout:decorate="~{layout}">
+<head>
+    <meta charset="UTF-8">
+    <title>Electrical Components Form</title>
+    <link rel="stylesheet" href="/css/inventorystyle.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+<section layout:fragment="content">
+<div class="container">
+    <div class="category-section">
+        <div class="category-row">
+            <span class="category-label">Category L1</span>
+            <select class="category-select" id="categoryL1" name="categoryL1">
+                <option value="">Select Category L1</option>
+            </select>
+        </div>
+        <div class="category-row">
+            <span class="category-label">Category L2</span>
+            <select class="category-select" id="categoryL2" name="categoryL2" disabled>
+                <option value="">Select Category L2</option>
+            </select>
+        </div>
+        <div class="category-row">
+            <span class="category-label">Category L3</span>
+            <select class="category-select" id="categoryL3" name="categoryL3" disabled>
+                <option value="">Select Category L3</option>
+            </select>
+        </div>
+        <div class="category-row">
+            <button id="filterButton" class="btn btn-filter">Filter</button>
+        </div>
+    </div>
+    <div class="search-container">
+        <i data-lucide="search" class="search-icon"></i>
+        <input type="text" id="searchBox" onkeyup="myFunction()" placeholder="Search by listing name" class="search-input">
+    </div>
+    <div class="table-container">
+        <table class="data-table" id="inventoryTable">
+            <thead>
+            <tr>
+                <th>Image</th>
+                <th>Listing Name</th>
+                <th>Child SKU</th>
+                <th>Listing ID</th>
+                <th>SKU ID</th>
+                <th>Listing Unit Qty</th>
+                <th>HSN Code</th>
+                <th>Qty in stock (available inventory)</th>
+                <th>Unit price (INR, without GST)</th>
+                <th>GST Rate</th>
+                <th>GST Amount(INR)</th>
+                <th>Unit price (INR, including GST)</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="inventoryTableBody">
+            </tbody>
+        </table>
+        <div id="loading">Loading more items...</div>
+    </div>
+
+    <div class="button-container">
+        <button class="btn btn-clear" type="button">Clear</button>
+    </div>
+
+    <div class="clear-note">
+        Pressing the "Clear" button will restore the original values
+    </div>
+    <div id="customPopup" class="custom-popup">
+        Changes submitted successfully
+    </div>
+    <div id="confirmationPopup" class="custom-popup confirmation-popup" style="display: none;">
+        <p id="confirmationMessage"></p>
+        <div class="confirmation-buttons">
+            <button id="confirmYes" class="btn btn-confirm">Yes</button>
+            <button id="confirmNo" class="btn btn-cancel">No</button>
+        </div>
+    </div>
+</div>
+    <div id="loaderContainer" class="loader-container" style="display: none;">
+        <div class="loader"></div>
+    </div>
+<script th:inline="javascript">
+    let page = 0;
+    let loading = false;
+    const pageSize = 10;
+    let categoryL1Id = null;
+    let categoryL2Id = null;
+    let categoryL3Id = null;
+    let editedRows = new Set();
+
+        // Function to show confirmation popup
+    function showConfirmationPopup(message, onConfirm) {
+        const popup = document.getElementById('confirmationPopup');
+        const messageElement = document.getElementById('confirmationMessage');
+        const yesButton = document.getElementById('confirmYes');
+        const noButton = document.getElementById('confirmNo');
+
+        messageElement.textContent = message;
+        popup.style.display = 'block';
+
+        yesButton.onclick = () => {
+            popup.style.display = 'none';
+            onConfirm();
+        };
+
+        noButton.onclick = () => {
+            popup.style.display = 'none';
+        };
+    }
+
+    // Function to check if all categories are selected
+            function checkCategories() {
+                const categoryL1Selected = document.getElementById('categoryL1').value;
+                const categoryL2Selected = document.getElementById('categoryL2').value;
+                const categoryL3Selected = document.getElementById('categoryL3').value;
+
+                const filterButton = document.getElementById('filterButton');
+
+                // Enable button if all categories are selected, otherwise disable it
+                if (categoryL1Selected && categoryL2Selected && categoryL3Selected) {
+                    filterButton.disabled = false;
+                    filterButton.style.backgroundColor = ''; // Reset background color to normal
+                    filterButton.style.color = ''; // Reset text color to normal
+                } else {
+                    filterButton.disabled = true;
+                    filterButton.style.backgroundColor = '#d3d3d3'; // Grey background
+                    filterButton.style.color = '#a9a9a9'; // Grey text
+                }
+            }
+
+            // Add event listeners to category selects to check if all are selected
+            document.getElementById('categoryL1').addEventListener('change', checkCategories);
+            document.getElementById('categoryL2').addEventListener('change', checkCategories);
+            document.getElementById('categoryL3').addEventListener('change', checkCategories);
+
+            // Initial check on page load
+            checkCategories();
+
+    // Function to show loader
+    function showLoader() {
+        document.getElementById('loaderContainer').style.display = 'flex';
+    }
+
+    // Function to hide loader
+    function hideLoader() {
+        document.getElementById('loaderContainer').style.display = 'none';
+    }
+        // Function to show custom popup
+        function showCustomPopup(message) {
+            const popup = document.getElementById('customPopup');
+            popup.textContent = message;
+            popup.style.display = 'block';
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 3000);
+        }
+
+
+    // Infinite scroll implementation
+    document.querySelector('.table-container').addEventListener('scroll', (e) => {
+        if (loading) return;
+
+        const container = e.target;
+        if (container.scrollHeight - container.scrollTop <= container.clientHeight + 100) {
+            loadInventoryData();
+        }
+    });
+
+    function loadInventoryData() {
+        loading = true;
+        document.getElementById('loading').style.display = 'block';
+
+        const url = new URL('/pages/api/inventory', window.location.origin);
+        url.searchParams.append('page', page);
+        url.searchParams.append('size', pageSize);
+        if (categoryL1Id) url.searchParams.append('categoryL1Id', categoryL1Id);
+        if (categoryL2Id) url.searchParams.append('categoryL2Id', categoryL2Id);
+        if (categoryL3Id) url.searchParams.append('categoryL3Id', categoryL3Id);
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const tableBody = document.getElementById('inventoryTableBody');
+
+                if (data.length === 0) {
+                    document.getElementById('loading').textContent = 'No more items to load.';
+                    hideLoader();
+                    return;
+                }
+
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.dataset.id = item.skuId;
+                    row.innerHTML = `
+                        <td style="text-align: center; vertical-align: middle;">
+                            <div class="image-container">
+                                <a href="https://lstimages.s3.ap-south-1.amazonaws.com/${item.lstId}-Image - 1.jpg" target="_blank" rel="noopener noreferrer">
+                                    <img src="https://lstimages.s3.ap-south-1.amazonaws.com/${item.lstId}-Image - 1.jpg"
+                                         alt="Product image"
+                                         width="50"
+                                         height="50"
+                                         style="object-fit: cover; display: block; margin: 0 auto; border-radius: 4px;">
+                                </a>
+                                <img src="https://lstimages.s3.ap-south-1.amazonaws.com/${item.lstId}-Image - 1.jpg"
+                                     alt="Zoomed product image"
+                                     class="zoomed-image">
+                            </div>
+                        </td>
+                        <td>${item.lstName}</td>
+                        <td>${item.childSku}</td>
+                        <td>${item.lstId}</td>
+                        <td>${item.skuId}</td>
+                        <td>${item.lstQty}</td>
+                        <td class="editable-cell hsnCode-cell" data-original="${item.hsnCode}">${item.hsnCode}</td>
+                        <td class="editable-cell qtyInStock-cell" data-original="${item.qtyInStock}">${item.qtyInStock}</td>
+                        <td class="editable-cell unitPriceWoGst-cell" data-original="${item.unitPriceWoGst}">${item.unitPriceWoGst}</td>
+                        <td class="editable-cell gstRate-cell" data-original="${item.gstRate}">${item.gstRate}</td>
+                        <td class="editable-cell gstAmount-cell" data-original="${item.gstAmount}">${item.gstAmount}</td>
+                        <td class="editable-cell unitPriceWGst-cell" data-original="${item.unitPriceWGst}">${item.unitPriceWGst}</td>
+                        <td class="action-cell">
+                            <button class="edit-button" title="Edit">
+                                <i data-lucide="pencil"></i>
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+
+                    // Add click handler for edit button
+                    const editButton = row.querySelector('.edit-button');
+                    if (editButton) {
+                        editButton.addEventListener('click', () => toggleEditMode(row));
+                    } else {
+                        console.error('Edit button not found for row:', row);
+                    }
+                });
+
+                page++;
+                loading = false;
+                document.getElementById('loading').style.display = 'none';
+                hideLoader();
+                lucide.createIcons(); // Initialize Lucide icons
+            })
+            .catch(error => {
+                console.error('Error loading inventory data:', error);
+                loading = false;
+                document.getElementById('loading').textContent = 'Error loading data. Please try again.';
+                hideLoader();
+            });
+    }
+
+    function toggleEditMode(row) {
+        console.log('toggleEditMode called with row:', row);
+        if (!row) {
+            console.error('Row is null or undefined');
+            return;
+        }
+
+        console.log('Row classList:', row.classList);
+        console.log('Editable cells:', row.querySelectorAll('.editable-cell'));
+        console.log('Action button:', row.querySelector('.edit-button'));
+
+        const isEditing = row.classList.toggle('editing');
+        const editableCells = row.querySelectorAll('.editable-cell');
+        const actionButton = row.querySelector('.edit-button');
+
+        if (!actionButton) {
+            console.error('Action button not found');
+            return;
+        }
+
+        if (isEditing) {
+            // Entering edit mode - show submit icon
+            actionButton.innerHTML = '<i data-lucide="check-square"></i>';
+            actionButton.title = 'Submit changes';
+
+            editableCells.forEach(cell => {
+                cell.contentEditable = true;
+                cell.setAttribute('data-editing', cell.textContent.trim());
+            });
+            editedRows.add(row.dataset.id);
+        } else {
+            // Exiting edit mode - submit changes
+            actionButton.innerHTML = '<i data-lucide="pencil"></i>';
+            actionButton.title = 'Edit';
+
+            const skuId = row.dataset.id;
+            const hsnCodeCell = row.querySelector('.hsnCode-cell');
+            const qtyInStockCell = row.querySelector('.qtyInStock-cell');
+            const unitPriceWoGstCell = row.querySelector('.unitPriceWoGst-cell');
+            const gstRateCell = row.querySelector('.gstRate-cell');
+            const gstAmountCell = row.querySelector('.gstAmount-cell');
+            const unitPriceWGstCell = row.querySelector('.unitPriceWGst-cell');
+
+            if (!hsnCodeCell || !unitPriceWoGstCell || !gstRateCell || !gstAmountCell || !unitPriceWGstCell || !qtyInStockCell) {
+                console.error('One or more editable cells not found');
+                console.log('Row HTML:', row.innerHTML);
+                return;
+            }
+
+            const hsnCode = hsnCodeCell.textContent.trim();
+            const qtyInStock = qtyInStockCell.textContent.trim();
+            const unitPriceWoGst = unitPriceWoGstCell.textContent.trim();
+            const gstRate = gstRateCell.textContent.trim();
+            const gstAmount = gstAmountCell.textContent.trim();
+            const unitPriceWGst = unitPriceWGstCell.textContent.trim();
+
+            // Construct URL with query parameters
+            const url = new URL('/pages/api/submit', window.location.origin);
+            url.searchParams.append('skuId', skuId);
+            url.searchParams.append('hsnCode', hsnCode);
+            url.searchParams.append('qtyInStock',qtyInStock);
+            url.searchParams.append('unitPriceWoGst', unitPriceWoGst);
+            url.searchParams.append('gstRate', gstRate);
+            url.searchParams.append('gstAmount', gstAmount);
+            url.searchParams.append('unitPriceWGst', unitPriceWGst);
+
+            // Make GET request
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Changes submitted successfully', data);
+                    showCustomPopup('Changes submitted successfully');
+                    editedRows.delete(row.dataset.id);
+
+                    editableCells.forEach(cell => {
+                        cell.contentEditable = false;
+                        cell.setAttribute('data-original', cell.textContent.trim());
+                        cell.removeAttribute('data-editing');
+                    });
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    showCustomPopup('Error submitting changes');
+                    // Revert changes if submission fails
+                    editableCells.forEach(cell => {
+                        cell.textContent = cell.getAttribute('data-original');
+                        cell.contentEditable = false;
+                    });
+                });
+        }
+
+        // Initialize the icon
+        lucide.createIcons({
+            elements: [actionButton.querySelector('i')]
+        });
+    }
+
+
+    async function fetchApplicableCategories(level, parentValue) {
+        const url = new URL('/pages/api/applicable/category', window.location.origin);
+        url.searchParams.append('level', level);
+        if (parentValue) {
+            url.searchParams.append('parent', parentValue);
+        }
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+            return [];
+        }
+    }
+
+    async function loadCategoryL1() {
+        try {
+            const l1Options = await fetchApplicableCategories('L1');
+            updateCategoryOptions(document.getElementById('categoryL1'), l1Options);
+        } catch (error) {
+            console.error('Error loading Category L1:', error);
+            alert('Failed to load Category L1. Please refresh the page to try again.');
+        }
+    }
+
+    function updateCategoryOptions(selectElement, options) {
+        selectElement.innerHTML = '<option value="">Select Category</option>';
+        options.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option;
+            optionElement.textContent = option;
+            selectElement.appendChild(optionElement);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        lucide.createIcons();
+        const filterButton = document.getElementById('filterButton');
+        const categoryL1 = document.getElementById('categoryL1');
+        const categoryL2 = document.getElementById('categoryL2');
+        const categoryL3 = document.getElementById('categoryL3');
+
+        // Initially disable L2 and L3
+        categoryL2.disabled = true;
+        categoryL3.disabled = true;
+        filterButton.disabled = true;
+
+        // Load Category L1 options when the page loads
+        loadCategoryL1();
+
+        // Event listener for Category L1
+        categoryL1.addEventListener('change', async function() {
+            categoryL2.disabled = true;
+            categoryL3.disabled = true;
+            categoryL2.innerHTML = '<option value="">Select Category L2</option>';
+            categoryL3.innerHTML = '<option value="">Select Category L3</option>';
+            filterButton.disabled = true;
+
+            if (this.value) {
+                const l2Options = await fetchApplicableCategories('L2', this.value);
+                updateCategoryOptions(categoryL2, l2Options);
+                categoryL2.disabled = false;
+            }
+        });
+
+        // Event listener for Category L2
+        categoryL2.addEventListener('change', async function() {
+            categoryL3.disabled = true;
+            categoryL3.innerHTML = '<option value="">Select Category L3</option>';
+            filterButton.disabled = true;
+
+            if (this.value) {
+                const l3Options = await fetchApplicableCategories('L3', this.value);
+                updateCategoryOptions(categoryL3, l3Options);
+                categoryL3.disabled = false;
+            }
+        });
+
+        // Event listener for Category L3
+        categoryL3.addEventListener('change', function() {
+            filterButton.disabled = !this.value;
+        });
+
+        // Filter button implementation
+        filterButton.addEventListener('click', function() {
+            categoryL1Id = categoryL1.value || null;
+            categoryL2Id = categoryL2.value || null;
+            categoryL3Id = categoryL3.value || null;
+
+            // Reset the table and load filtered data
+            document.getElementById('inventoryTableBody').innerHTML = '';
+            page = 0;
+            showLoader();
+            loadInventoryData();
+        });
+    });
+
+
+    // Clear button implementation
+    document.querySelector('.btn-clear').addEventListener('click', function() {
+        showConfirmationPopup('Are you sure you want to clear all changes?', function() {
+            // Clear pre-selected filters
+            document.getElementById('categoryL1').value = '';
+            document.getElementById('categoryL2').value = '';
+            document.getElementById('categoryL3').value = '';
+            categoryL1Id = null;
+            categoryL2Id = null;
+            categoryL3Id = null;
+
+            // Reset the table and reload data
+            document.getElementById('inventoryTableBody').innerHTML = '';
+            page = 0;
+            editedRows.clear();
+            filterButton.disabled = true;
+            categoryL2.disabled = true;
+            categoryL3.disabled = true;
+
+            // Show success message
+            showCustomPopup('All changes have been cleared');
+        });
+    });
+
+    window.addEventListener('error', function(event) {
+        console.error('Unhandled error:', event.error);
+    });
+
+    function myFunction() {
+      var input, filter, table, tr, td, i, txtValue;
+      input = document.getElementById("searchBox");
+      filter = input.value.toUpperCase();
+      table = document.getElementById("inventoryTable");
+      tr = table.getElementsByTagName("tr");
+      for (i = 1; i < tr.length; i++) { // Start from 1 to skip the header row
+        td = tr[i].getElementsByTagName("td")[1]; // Change index to 1 for "Listing Name" column
+        if (td) {
+          txtValue = td.textContent || td.innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            tr[i].style.display = "";
+          } else {
+            tr[i].style.display = "none";
+          }
+        }
+      }
+    }
+</script>
+</section>
+</body>
+</html>
+

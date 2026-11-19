@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Seller Registration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/registration.css}">
+</head>
+<body>
+<div class="fixed-header">
+    <h1 class="page-header">Seller Onboarding</h1>
+    <div class="progress-bar">
+        <div class="progress" id="progress"></div>
+    </div>
+</div>
+<div class="container">
+    <div class="form-container">
+        <form id="registrationForm" enctype="multipart/form-data">
+            <!-- Business Details Section -->
+            <div id="businessDetails" class="form-section active">
+                <h2><i class="fas fa-building"></i> Business Details</h2>
+                <div class="form-group">
+                    <label for="gstin">GSTIN<span class="required">*</span></label>
+                    <input type="text" id="gstin" name="gstin" required maxlength="15" oninput="check_gst()">
+                    <span id="gstError" class="error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="entityName">Entity Name<span class="required">*</span></label>
+                    <input type="text" id="entityName" name="entityName" required>
+                </div>
+                <div class="form-group">
+                    <label for="contactName">Contact Name<span class="required">*</span></label>
+                    <input type="text" id="contactName" name="contactName" required>
+                </div>
+                <div class="form-group">
+                    <label for="tradeName">Trade Name<span class="required">*</span></label>
+                    <input type="text" id="tradeName" name="tradeName" required>
+                </div>
+                <div class="form-group">
+                    <label for="country">Country<span class="required">*</span></label>
+                    <input type="text" id="country" name="country"  value="India" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="pincode">Pincode<span class="required">*</span></label>
+                    <input type="text" id="pincode" name="pincode" maxlength="6" required>
+                </div>
+                <div class="form-group">
+                    <label for="state">State<span class="required">*</span></label>
+                    <input type="text" id="state" name="state" required>
+                </div>
+                <div class="form-group">
+                    <label for="city">City<span class="required">*</span></label>
+                    <input type="text" id="city" name="city" required>
+                </div>
+                <div class="form-group">
+                    <label for="tan">TAN<span class="required">*</span></label>
+                    <input type="text" id="tan" name="tan" required>
+                </div>
+                <div class="form-group">
+                    <label for="pan">PAN<span class="required">*</span></label>
+                    <input type="text" id="pan" name="pan" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="phoneNo">Phone No:<span class="required">*</span></label>
+                    <div class="otp-group">
+                        <input type="text" id="phoneNo" name="phoneNo" placeholder="Enter mobile number.(Only 10 digits, like 9876543210)" required maxlength="10">
+                        <button type="button" id="mobOtpSendBtn" disabled class="btn-otp">OTP</button>
+                        <input type="text" id="mobOtp" name="mobOtp" placeholder="Enter OTP" maxlength="4" class="otp-input" style="display: none;">
+                        <button type="button" id="mobOtpvalidationBtn" class="btn-verify" style="display: none;">Verify</button>
+                        <span id="mobVerificationStatus" class="verification-status"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:<span class="required">*</span></label>
+                    <div class="otp-group">
+                        <input type="email" id="email" name="email" placeholder="Enter email" required>
+                        <button type="button" id="emailOtpSendBtn" class="btn-otp">OTP</button>
+                        <input type="text" id="emailOtp" name="emailOtp" placeholder="Enter OTP" maxlength="5" class="otp-input" style="display: none;">
+                        <button type="button" id="emailOtpvalidationBtn" class="btn-verify" style="display: none;">Verify</button>
+                        <span id="emailVerificationStatus" class="verification-status"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="altEmail">Alternate Email:</label>
+                    <div class="otp-group">
+                        <input type="email" id="altEmail" name="altEmail" placeholder="Enter alternate email" autocomplete="off">
+                        <button type="button" id="altEmailOtpSendBtn" class="btn-otp">OTP</button>
+                        <input type="text" id="altEmailOtp" name="altEmailOtp" placeholder="Enter OTP" maxlength="5" class="otp-input" style="display: none;">
+                        <button type="button" id="altEmailOtpvalidationBtn" class="btn-verify" style="display: none;">Verify</button>
+                        <span id="altEmailVerificationStatus" class="verification-status"></span>
+
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="altPhoneNo">Alternate Phone No:</label>
+                    <div class="otp-group">
+                        <input type="text" id="altPhoneNo" name="altPhoneNo" placeholder="Enter alternate phone no. (Only 10 digits, like 9876543210)" maxlength="10">
+                        <button type="button" id="altMobOtpSendBtn" class="btn-otp" disabled>OTP</button>
+                        <input type="text" id="altMobOtp" name="altMobOtp" placeholder="Enter OTP" maxlength="4" class="otp-input" style="display: none;">
+                        <button type="button" id="altMobOtpvalidationBtn" class="btn-verify" style="display: none;">Verify</button>
+                        <span id="altMobVerificationStatus" class="verification-status"></span>
+                    </div>
+                </div>
+            </div>
+            <div id="loaderContainer" class="loader-container" style="display: none;">
+                <div class="loader"></div>
+            </div>
+            <!-- Bank Details Section -->
+            <div id="bankDetails" class="form-section active">
+                <h2><i class="fas fa-university"></i> Bank Details</h2>
+                <div class="form-group">
+                    <label for="accName">Account Holder Name<span class="required">*</span></label>
+                    <input type="text" id="accName" name="accName" required>
+                </div>
+                <div class="form-group">
+                    <label for="accNo">Account Number<span class="required">*</span></label>
+                    <input type="text" id="accNo" name="accNo" required>
+                </div>
+                <div class="form-group">
+                    <label for="cnfaccNo">Confirm Account Number<span class="required">*</span></label>
+                    <input type="password" id="cnfaccNo" name="cnfaccNo" required>
+                    <span id="accountError" class="error" style="color: red;"></span>
+                </div>
+                <div class="form-group">
+                    <label for="ifsc">IFSC Code<span class="required">*</span></label>
+                    <input type="text" id="ifsc" name="ifsc" required>
+                </div>
+                <div class="form-group">
+                    <label for="bankName">Bank Name<span class="required">*</span></label>
+                    <input type="text" id="bankName" name="bankName" required>
+                </div>
+                <div class="form-group">
+                    <label for="branchName">Branch Name</label>
+                    <input type="text" id="branchName" name="branchName">
+                </div>
+                <div class="form-group">
+                    <label for="branchCityName">Branch City Name</label>
+                    <input type="text" id="branchCityName" name="branchCityName">
+                </div>
+                <div class="form-group">
+                    <label for="accountType">Account Type<span class="required">*</span></label>
+                    <select id="accountType" name="accountType" required>
+                        <option value="current" selected>Current</option>
+                        <option value="saving">Saving</option>
+                        <option value="joint">Joint Account</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Documentation Section -->
+            <div id="documentation" class="form-section active">
+                <h2><i class="fas fa-file-alt"></i> Documentation</h2>
+                <div class="form-group file-upload">
+                    <label for="uploadOwnerPan">PAN Card of Owner:<span class="required">*</span></label>
+                    <input type="file" id="uploadOwnerPan" name="uploadOwnerPan" accept=".pdf,.jpg,.jpeg,.png" required>
+                    <label for="uploadOwnerPan" class="file-label">Choose File</label>
+                    <span class="file-name"></span>
+                </div>
+                <div class="form-group file-upload">
+                    <label for="uploadGstin">GSTIN Certificate:<span class="required">*</span></label>
+                    <input type="file" id="uploadGstin" name="uploadGstin" accept=".pdf,.jpg,.jpeg,.png" required>
+                    <label for="uploadGstin" class="file-label">Choose File</label>
+                    <span class="file-name"></span>
+                </div>
+                <div class="form-group file-upload">
+                    <label for="incCertificate">Certificate of Incorporation (MCA):<span class="required">*</span></label>
+                    <input type="file" id="incCertificate" name="incCertificate" accept=".pdf,.jpg,.jpeg,.png" required>
+                    <label for="incCertificate" class="file-label">Choose File</label>
+                    <span class="file-name"></span>
+                </div>
+                <div class="form-group file-upload">
+                    <label for="businessAddressProof">Business Address Proof:<span class="required">*</span></label>
+                    <input type="file" id="businessAddressProof" name="businessAddressProof" accept=".pdf,.jpg,.jpeg,.png" required>
+                    <label for="businessAddressProof" class="file-label">Choose File</label>
+                    <span class="file-name"></span>
+                </div>
+                <div class="form-group file-upload">
+                    <label for="signature">Signature:<span class="required">*</span></label>
+                    <input type="file" id="signature" name="signature" accept=".jpg,.jpeg,.png" required>
+                    <label for="signature" class="file-label">Choose File</label>
+                    <span class="file-name"></span>
+                </div>
+            </div>
+
+            <!-- Billing Address Section -->
+            <div id="billingAddress" class="form-section active">
+                <h2><i class="fas fa-map-marker-alt"></i> Billing Address</h2>
+                <div class="form-group checkbox-group">
+
+                    <label for="sameAsBusiness"><input type="checkbox" id="sameAsBusiness" name="sameAsBusiness">Same as Business Address</label>
+                </div>
+                <div id="billingAddressFields">
+                    <div class="form-group">
+                        <label for="addressLine1">Flat, House no., Building, Company, Apartment<span class="required">*</span></label>
+                        <input type="text" id="addressLine1" name="addressLine1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addressLine2">Area, Street, Sector, Village</label>
+                        <input type="text" id="addressLine2" name="addressLine2">
+                    </div>
+                    <div class="form-group">
+                        <label for="landmark">Nearest landmark<span class="required">*</span></label>
+                        <input type="text" id="landmark" name="landmark" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="billPincode">Pincode<span class="required">*</span></label>
+                        <input type="text" id="billPincode" name="billPincode" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="billCity">City<span class="required">*</span></label>
+                        <input type="text" id="billCity" name="billCity" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="billDistrict">District<span class="required">*</span></label>
+                        <input type="text" id="billDistrict" name="billDistrict" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="billState">State<span class="required">*</span></label>
+                        <input type="text" id="billState" name="billState" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="billCountry">Country<span class="required">*</span></label>
+                        <input type="text" id="billCountry" name="billCountry" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pickup Address Section -->
+            <div id="pickupAddress" class="form-section active">
+                <h2><i class="fas fa-truck"></i> Pickup Address</h2>
+                <div class="form-group checkbox-group">
+                    <label for="sameAsBusinessPickup"><input type="checkbox" id="sameAsBusinessPickup" name="sameAsBusinessPickup">Same as Business Address</label>
+                </div>
+                <div id="pickupAddressFields">
+                    <div class="form-group">
+                        <label for="pickAddressLine1">Flat, House no., Building, Company, Apartment<span class="required">*</span></label>
+                        <input type="text" id="pickAddressLine1" name="pickAddressLine1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pickAddressLine2">Area, Street, Sector, Village</label>
+                        <input type="text" id="pickAddressLine2" name="pickAddressLine2">
+                    </div>
+                    <div class="form-group">
+                        <label for="picklandmark">Nearest landmark<span class="required">*</span></label>
+                        <input type="text" id="picklandmark" name="picklandmark" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pickPincode">Pincode<span class="required">*</span></label>
+                        <input type="text" id="pickPincode" name="pickPincode" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pickCity">City<span class="required">*</span></label>
+                        <input type="text" id="pickCity" name="pickCity" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pickDistrict">District<span class="required">*</span></label>
+                        <input type="text" id="pickDistrict" name="pickDistrict" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pickState">State<span class="required">*</span></label>
+                        <input type="text" id="pickState" name="pickState" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pickCountry">Country<span class="required">*</span></label>
+                        <input type="text" id="pickCountry" name="pickCountry" required>
+                    </div>
+                </div>
+            </div>
+
+            <div id="brandSelection" class="form-section active">
+                <h2><i class="fas fa-tags"></i> Select the Brands You Want to Sell</h2>
+
+                <div class="form-group brand-group">
+                    <label for="brand1">Brand Name:</label>
+                    <select id="brand1" name="brands[]" class="brandSelect">
+                        <option value="">Select Brand</option>
+                    </select>
+
+                    <label for="association1">Type of Association:</label>
+                    <select id="association1" name="association[]" class="associationSelect" onchange="toggleUpload(1)">
+                        <option value="">Select Association</option>
+                        <option value="trader">Trader / Wholesaler</option>
+                        <option value="authorized">Authorized Dealer / Distributor</option>
+                        <option value="owner">Brand Owner </option>
+                    </select>
+
+                    <div class="form-group file-upload-brand" style="display: none;">
+                        <label for="brandCertificate1">Upload Brand Certificate (if applicable):</label>
+                        <input type="file" id="brandCertificate1" name="brandCertificate[]" accept=".pdf,.jpg,.jpeg,.png">
+                    </div>
+                </div>
+
+                <div id="brandContainer"></div>
+
+                <button type="button" id="addBrandBtn" class="btn-add"><i class="fas fa-plus"></i> Add More Brands</button>
+            </div>
+
+            <!-- Terms and Mailing Section -->
+            <div id="termsAndMailing" class="form-section">
+                <h2><i class="fas fa-file-signature"></i> Terms and Mailing</h2>
+                <div class="form-group checkbox-group">
+
+                    <label for="acceptPrivacyPolicy"><input type="checkbox" id="acceptPrivacyPolicy" name="acceptPrivacyPolicy" required>I accept the <a href="https://www.rhokart.com/privacy-policy" target="_blank">Privacy Policy for Rhokart</a>.</label>
+                </div>
+                <div class="form-group checkbox-group">
+
+                    <label for="receiveInfo"><input type="checkbox" id="receiveInfo" name="receiveInfo">I want to receive personalized information from Rhokart</label>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="form-navigation">
+                <button type="button" id="prevBtn" class="nav-btn"><i class="fas fa-arrow-left"></i> Previous</button>
+                <button type="button" id="nextBtn" class="nav-btn">Next <i class="fas fa-arrow-right"></i></button>
+                <button type="submit" id="submitBtn" class="nav-btn submit-btn" style="display:none;">Submit <i class="fas fa-check"></i></button>
+            </div>
+            <span id="altEmailError" class="error"></span>
+        </form>
+    </div>
+    <div id="successMessage" style="display: none;"></div>
+</div>
+<script th:src="@{/js/registration.js}"></script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" xmlns:th="http://www.w3.org/1999/xhtml"
+      layout:decorate="~{layout}">
+<head>
+    <meta charset="UTF-8">
+    <title>Excel Templates</title>
+    <link rel="stylesheet" href="/css/excelTemplatestyle.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+<section layout:fragment="content">
+    <div class="container">
+        <!-- Category Selection Section -->
+        <div class="category-section">
+            <div class="category-row">
+                <span class="category-label">Category L1</span>
+                <select class="category-select" id="categoryL1" name="categoryL1">
+                    <option value="">Select Category L1</option>
+                </select>
+            </div>
+            <div class="category-row">
+                <span class="category-label">Category L2</span>
+                <select class="category-select" id="categoryL2" name="categoryL2" disabled>
+                    <option value="">Select Category L2</option>
+                </select>
+            </div>
+            <div class="category-row">
+                <button id="filterButton" class="btn btn-filter" disabled>Filter</button>
+            </div>
+        </div>
+
+        <!-- Results Section (Hidden by default) -->
+        <div id="resultsSection" class="results-section">
+            <div class="list-container">
+                <table class="items-table">
+                    <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody id="categoryList">
+                    <!-- Categories will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="button-container">
+            <button class="btn btn-clear" type="button">Clear</button>
+        </div>
+
+        <div class="clear-note">
+            Pressing the "Clear" button will restore the original values
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', async function () {
+            const filterButton = document.getElementById('filterButton');
+            const categoryL1 = document.getElementById('categoryL1');
+            const categoryL2 = document.getElementById('categoryL2');
+            const resultsSection = document.getElementById('resultsSection');
+
+            // Initially disable L2 and Filter button
+            categoryL2.disabled = true;
+            filterButton.disabled = true;
+
+            try {
+                await loadCategoryL1();
+            } catch (error) {
+                console.error('Failed to load Category L1:', error);
+            }
+
+            categoryL1.addEventListener('change', async function () {
+                categoryL2.disabled = true;
+                categoryL2.innerHTML = '<option value="">Select Category L2</option>';
+                filterButton.disabled = true;
+                resultsSection.classList.remove('visible');
+
+                if (this.value) {
+                    try {
+                        const l2Options = await fetchApplicableCategories('L2', this.value);
+                        updateCategoryOptions(categoryL2, l2Options);
+                        categoryL2.disabled = false;
+                    } catch (error) {
+                        console.error('Error loading Category L2:', error);
+                        alert('Failed to load Category L2 options.');
+                    }
+                }
+            });
+
+            categoryL2.addEventListener('change', function() {
+                filterButton.disabled = !this.value;
+            });
+
+            filterButton.addEventListener('click', async function () {
+                const categoryL1Value = categoryL1.value;
+                const categoryL2Value = categoryL2.value;
+
+                try {
+                    const categories = await fetchApplicableCategories('L3', categoryL2Value);
+                    displayCategories(categories);
+                    resultsSection.classList.add('visible');
+                } catch (error) {
+                    console.error('Error fetching categories:', error);
+                    alert('Failed to fetch categories');
+                }
+            });
+
+            document.querySelector('.btn-clear').addEventListener('click', function() {
+                if(confirm('Are you sure you want to clear all changes?')) {
+                    categoryL1.value = '';
+                    categoryL2.value = '';
+                    categoryL2.disabled = true;
+                    filterButton.disabled = true;
+                    resultsSection.classList.remove('visible');
+                }
+            });
+        });
+
+        async function fetchApplicableCategories(level, parentValue) {
+            const url = new URL('/pages/api/applicable/category', window.location.origin);
+            url.searchParams.append('level', level);
+            if (parentValue) {
+                url.searchParams.append('parent', parentValue);
+            }
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch categories: ${response.statusText}`);
+            }
+            return await response.json();
+        }
+
+        async function loadCategoryL1() {
+            const l1Options = await fetchApplicableCategories('L1');
+            updateCategoryOptions(categoryL1, l1Options);
+        }
+
+        function updateCategoryOptions(selectElement, options) {
+            selectElement.innerHTML = '<option value="">Select Category</option>';
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option;
+                selectElement.appendChild(optionElement);
+            });
+        }
+
+         function displayCategories(categories) {
+            const tbody = document.getElementById('categoryList');
+            tbody.innerHTML = categories.map(category => `
+                <tr>
+                    <td>${category}</td>
+                    <td class="row-actions">
+                        <button class="btn btn-row-action" onclick="downloadExcel('${category}')">
+                            Download
+                        </button>
+                        <button class="btn btn-row-action-upload" onclick="document.getElementById('upload_${category}').click()">
+                            Upload
+                        </button>
+                        <input
+                            type="file"
+                            id="upload_${category}"
+                            class="file-input"
+                            accept=".xlsx,.xls"
+                            onchange="handleFileUpload(event, '${category}')"
+                        >
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function downloadExcel(category) {
+            const categoryL1 = document.getElementById('categoryL1').value;
+            const categoryL2 = document.getElementById('categoryL2').value;
+
+            try {
+                const response = await fetch(`/pages/api/download-excel?l1=${encodeURIComponent(categoryL1)}&l2=${encodeURIComponent(categoryL2)}&category=${encodeURIComponent(category)}`);
+
+                if (response.ok) {
+                    const presignedUrl = await response.text();
+                    window.location.href = presignedUrl; // This will start the download directly from S3
+                } else if (response.status === 404) {
+                    const errorMessage = await response.text();
+                    alert(errorMessage);
+                } else {
+                    throw new Error('Download failed');
+                }
+            } catch (error) {
+                console.error('Error downloading file:', error);
+                alert('Failed to download Excel file');
+            }
+        }
+
+        async function handleFileUpload(event, category) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('categoryL1', document.getElementById('categoryL1').value);
+            formData.append('categoryL2', category);
+
+            try {
+                const response = await fetch('/page/api/upload-excel', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Upload failed');
+                alert('File uploaded successfully');
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                alert('Failed to upload Excel file');
+            }
+        }
+    </script>
+</section>
+</body>
+</html>
+

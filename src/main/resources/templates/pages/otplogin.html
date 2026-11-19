@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Rhokart</title>
+    <link rel="stylesheet" th:href="@{/css/login.css}">
+</head>
+<body>
+<h1>Rhokart Seller Corner</h1>
+<div class="login-page">
+    <div class="form">
+        <form id="otplogin-form" class="login-form" method="post" th:action="@{/pages/otpvalidation}" th:object="${login}">
+            <div th:if="${login.isOtp} == 'false'">
+                <input type="text" id="email" placeholder="Enter Email" th:field="*{email}"/>
+                <span id="errorEmail" class="error"></span>
+                <button id="proceed-btn" type="button" onclick="validateForm()">Proceed</button>
+            </div>
+
+            <div th:if="${login.isOtp} == 'true'">
+                <input type="text" name="email" id="email" placeholder="Enter Email" th:field="${login.email}" readonly />
+                <input type="text" name="otp" id="otp" placeholder="Enter Otp" th:field="${login.otpValue}" oninput="validateOtp()" />
+                <span id="otperror" class="error"></span>
+                <button id="submitBtn" type="button" onclick="submitOtp()" >Submit</button>
+                <div class="timer">Time left = <span id="timer"></span></div>
+                <button id="resend-btn" type="button" disabled onclick="submitOtp()">Resend OTP</button>
+                <div  id = "err-message" th:if="${login.message} != null">
+                    <span style="color:red" th:text="${login.message}"></span>
+                </div>
+            </div>
+            <div class="line-container">
+                <div class="line"></div>
+                Or
+                <div class="line"></div>
+            </div>
+            <p class="message" >
+                <a th:href="@{/oauth2/authorization/google}">
+                    <img th:src="@{/images/google_icon.png}"  alt="Google SignIn" width="25" height="25" />
+                </a>
+                <a th:href="@{/oauth2/authorization/google}">
+                    Continue With Google
+                </a>
+            </p>
+            <div id="loading-overlay">
+                <div class="loader"></div>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+    function validateForm() {
+        const email = document.getElementById('email').value;
+        const errorEmail = document.getElementById('errorEmail');
+        const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!pattern.test(email)) {
+            errorEmail.textContent = 'Enter a valid email address.';
+            return false;
+        } else {
+            errorEmail.textContent = '';
+            document.getElementById('proceed-btn').disabled = false;
+            document.getElementById('otplogin-form').submit();
+            loader();
+        }
+    }
+
+    function submitOtp(){
+        let form = document.getElementById('otplogin-form');
+        let timer = document.getElementById('timer').innerHTML;
+        let bufferTime = 1;
+        form.submit();
+        localStorage.setItem('timer', timer);
+        loader();
+    }
+
+    function validateOtp() {
+        const otp = document.getElementById('otp').value;
+        const errorOtp = document.getElementById('otperror');
+        const submitBtn = document.getElementById('submitBtn');
+        const otpPattern = /^\d{5}$/;
+
+        if (!otpPattern.test(otp)) {
+            errorOtp.textContent = 'OTP must be exactly 5 numeric characters.';
+            submitBtn.disabled = true;
+        } else {
+            errorOtp.textContent = '';
+            submitBtn.disabled = false;
+        }
+    }
+
+    function loader() {
+        console.log('Loader will execute now');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'flex';
+        }
+    }
+
+    function resendOtp() {
+        console.log('Resending OTP...');
+        document.getElementById('resend-btn').disabled = true;
+		document.getElementById('submitBtn').disabled = false;
+		document.getElementById('otp').disabled = false;
+        timer(); // Restart timer
+    }
+
+    let timerOn = true;
+    function timer(remaining) {
+        var timerDisplay = document.getElementById('timer');
+        var otpBtn = document.getElementById('resend-btn');
+
+        function updateTimer() {
+            var m = Math.floor(remaining / 60);
+            var s = remaining % 60;
+            timerDisplay.innerHTML = `${m}:${s < 10 ? '0' + s : s}`;
+
+            if (remaining > 0) {
+                remaining--;
+                setTimeout(updateTimer, 1000);
+            } else {
+                otpBtn.disabled = false;
+                otpBtn.style.transition = 'background-color 0.3s, color 0.3s';
+				document.getElementById('submitBtn').disabled = true;
+				document.getElementById('otp').disabled = true;
+                document.getElementById('err-message').style.display = 'none';
+            }
+        }
+        updateTimer();
+    }
+
+    // Start the timer when the OTP input is shown
+    if (document.getElementById('otp')) {
+        timer(20);
+        document.getElementById('resend-btn').disabled = true;
+    }
+
+    if (document.getElementById('err-message')) {
+        remainingTime =localStorage.getItem('timer');
+        console.log('remaining time:' + remainingTime);
+        const timeArray = remainingTime.split(':');
+        var counter = parseInt(timeArray[0])*60 + parseInt(timeArray[1]) - 2;
+        console.log('timer get'+counter);
+        timer(counter);
+    }
+</script>
+</body>
+</html>

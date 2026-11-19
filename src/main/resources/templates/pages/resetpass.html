@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html  xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Rhokart</title>
+    <link rel="stylesheet" th:href="@{/css/login.css}">
+</head>
+<body>
+<h1>Rhokart Seller Corner</h1>
+<div class="login-page">
+    <div class="form">
+        <form class="input-form" id="resetpass-form" method="get" role="form" th:action="@{resetpass}" th:object="${user}">
+            <input type="text" id="email" name="email" th:field="*{email}" placeholder="Enter Email"  />
+            <input type="text" id="otp"  name="otp" th:field="*{otp}" placeholder="OTP" required />
+            <p class="message">OTP send to email address</p>
+            <br>
+            <input type="password" id="password"  th:field="*{password}" name="password" placeholder="New Password" required/>
+            <input type="password" id="confirmPassword" th:field="*{confirmPassword}" name="confirmPassword" placeholder="Confirm Password" required/>
+            <span id="passwordError" class="error"></span>
+            <button type="submit" id="submitBtn">Submit</button>
+            <p class="message">Not registered? <a th:href="@{registration}">Create an account</a></p>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById('resetpass-form').addEventListener('input', function () {
+        validateForm();
+    });
+
+    function validateForm() {
+        const username = document.getElementById('email').value;
+        const otp = document.getElementById('otp').value;
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const submitBtn = document.getElementById('submitBtn');
+        const errorElement = document.getElementById('passwordError');
+
+        let isValid = true;
+
+        if (!username || !password || !confirmPassword || !otp) {
+            isValid = false;
+        }
+
+        if (password !== confirmPassword) {
+            errorElement.textContent = 'Passwords do not match';
+            errorElement.classList.remove('success');
+            errorElement.classList.add('error');
+            isValid = false;
+        } else {
+            errorElement.textContent = 'Passwords match';
+            errorElement.classList.remove('error');
+            errorElement.classList.add('success');
+        }
+
+        if (isValid) {
+            submitBtn.classList.add('enabled');
+            submitBtn.disabled = false;
+        } else {
+            submitBtn.classList.remove('enabled');
+            submitBtn.disabled = true;
+        }
+    }
+
+</script>
+
+</body>
+</html>
+
+

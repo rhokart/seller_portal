@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Seller Registration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/registration.css}">
+    <title>Seller Corner</title>
+</head>
+<body>
+<div class="container">
+<p style="color: green; font-weight: bold;">Thank You! You are done with the onboarding process.</p>
+<p style="color: green;" ><strong>Your reference ID is - </strong> <span th:text="${referenceId}"></span></p>
+<p>Your submission is under approval. You will receive a confirmation regarding the next steps on your email ID and mobile number.</p>
+<p>You may also reach out to <a href="mailto:seller_support@rhokart.com">seller_support@rhokart.com</a> for any clarification with your reference ID screenshot and registered phone number.</p>
+`;
+</div>
+</body>
+</html>

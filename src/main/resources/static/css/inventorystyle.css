@@ -1,0 +1,359 @@
+@import url("https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700");
+
+body {
+  font-family: "Poppins", sans-serif;
+  margin: 20px;
+  background-color: #f5f5f5;
+}
+
+.container {
+  max-width: 100%;
+  margin: -15px auto;
+  padding: 20px;
+}
+
+.category-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 25px;
+  gap: 20px;
+}
+
+.category-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.category-label {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.category-select {
+  width: 200px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  background-color: white;
+}
+
+.table-container {
+  height: 650px; /* Fixed height for scrollable area */
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  margin-bottom: 20px;
+  position: relative;
+  font-size: 0.7em;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  margin-bottom: 20px;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid #b3b3b3;
+  padding: 8px;
+  text-align: left;
+  font-size: 0.9em;
+  transition: opacity 0.3s ease;
+  border-top: 0px;
+}
+
+.data-table th {
+  background-color: #d9d9d9;
+}
+
+.data-table thead {
+  position: sticky;
+  top: 0;
+  background-color: #f8f8f8;
+  z-index: 1;
+}
+
+.data-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.data-table tr.editing td:not(.editable-cell):not(.action-cell) {
+  opacity: 0.7;
+}
+
+.data-table tr.editing .editable-cell,
+.data-table tr.editing .action-cell {
+  opacity: 1;
+}
+
+.data-table tr.editing .editable-cell {
+  background-color: #f8fff8;
+  outline: 2px solid #4caf50;
+  outline-offset: -2px;
+  position: relative;
+  z-index: 1;
+}
+
+.data-table tr.editing .normal-cell {
+  opacity: 0.3;
+}
+
+.editable-cell {
+  position: relative;
+  transition: background-color 0.3s ease;
+}
+
+.editable-cell[contenteditable="true"] {
+  cursor: text;
+}
+
+.action-cell {
+  width: 50px;
+  text-align: center;
+}
+
+.edit-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.edit-button i {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+    stroke: currentColor;
+}
+
+.edit-button:hover {
+  color: #4caf50;
+}
+
+tr.editing .edit-button {
+  color: #4caf50;
+}
+
+
+.button-container {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.btn {
+  padding: 10px 30px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.btn-clear {
+  background-color: #f44336;
+  color: white;
+}
+
+.btn-filter {
+  background-color: #4caf50;
+  color: white;
+}
+
+.btn-filter:hover {
+  background-color: #45a049;
+}
+
+#filterButton:disabled {
+    background-color: #d3d3d3; /* Grey background */
+    color: #a9a9a9; /* Grey text */
+    cursor: not-allowed; /* Disable cursor */
+}
+
+.clear-note {
+  text-align: center;
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 10px;
+}
+
+#loading {
+  text-align: center;
+  padding: 10px;
+  display: none;
+  background-color: #f8f8f8;
+  border-top: 1px solid #ddd;
+  position: sticky;
+  bottom: 0;
+}
+
+.editable {
+  position: relative;
+  padding-right: 20px;
+}
+
+.edit-icon {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.3;
+  transition: opacity 0.2s;
+}
+
+.editable:hover .edit-icon,
+.editable:focus .edit-icon {
+  opacity: 1;
+}
+
+.editable:focus {
+  outline: 2px solid #4caf50;
+  outline-offset: -2px;
+}
+
+.search-container {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  max-width: 300px; /* Add max-width for the container */
+  margin-left: auto; /* This will push it to the right */
+}
+
+.search-input {
+    width: 100%;
+    height: 35px;
+    font-size: small;
+    padding: 8px 8px 8px 35px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+.search-icon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888;
+  width: 18px;
+  height: 18px;
+  pointer-events: none; /* Ensures the icon doesn't interfere with input */
+}
+
+.loader-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loader {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.image-container {
+  position: relative;
+  display: inline-block;
+}
+
+.image-container:hover .zoomed-image {
+  display: block;
+}
+
+.zoomed-image {
+  display: none;
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-15%);
+  width: 230px;
+  height: 200px;
+  object-fit: cover;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+/* Custom popup styles */
+.custom-popup {
+  position: fixed;
+  top: 275px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #4caf50;
+  color: white;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 10000;
+  display: none;
+  animation: fadeInOut 3s ease-in-out;
+  white-space: nowrap;
+}
+
+@keyframes fadeInOut {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  10%,
+  90% {
+    opacity: 1;
+  }
+}
+
+.confirmation-popup {
+  background-color: #f8f9fa;
+  color: #333;
+  border: 1px solid #dee2e6;
+  padding: 20px;
+  text-align: center;
+  white-space: normal;
+  max-width: 300px;
+}
+
+.confirmation-buttons {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-confirm {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-cancel {
+  background-color: #dc3545;
+  color: white;
+}
